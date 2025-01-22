@@ -1,0 +1,71 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps-dev
+  labels:
+    environment: dev
+    managed-by: tharun-makala
+  annotations:
+    contact: tharun.makala@outlook.com
+    description: "Development workloads"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps-staging
+  labels:
+    environment: staging
+    managed-by: tharun-makala
+  annotations:
+    contact: tharun.makala@outlook.com
+    description: "Staging / pre-production workloads"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps-prod
+  labels:
+    environment: prod
+    managed-by: tharun-makala
+  annotations:
+    contact: tharun.makala@outlook.com
+    description: "Production workloads"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    managed-by: tharun-makala
+  annotations:
+    description: "Prometheus, Grafana, Alertmanager"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    managed-by: tharun-makala
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    managed-by: tharun-makala
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    managed-by: tharun-makala
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gatekeeper-system
+  labels:
+    managed-by: tharun-makala
+    admission.gatekeeper.sh/ignore: "no-self-managing"
