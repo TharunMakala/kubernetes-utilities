@@ -1,0 +1,101 @@
+---
+# ops-support can read across all namespaces
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ops-support-reader
+  labels:
+    managed-by: tharun-makala
+subjects:
+  - kind: Group
+    name: "aks-ops-support"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: app-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# Developers get full dev access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-binding
+  namespace: apps-dev
+  labels:
+    managed-by: tharun-makala
+subjects:
+  - kind: Group
+    name: "aks-developers"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+---
+# Developers are read-only in staging
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-readonly-staging
+  namespace: apps-staging
+  labels:
+    managed-by: tharun-makala
+subjects:
+  - kind: Group
+    name: "aks-developers"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: app-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# CI/CD SA — dev
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cicd-deployer-dev
+  namespace: apps-dev
+  labels:
+    managed-by: tharun-makala
+subjects:
+  - kind: ServiceAccount
+    name: cicd-sa
+    namespace: apps-dev
+roleRef:
+  kind: ClusterRole
+  name: cicd-deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+# CI/CD SA — staging
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cicd-deployer-staging
+  namespace: apps-staging
+  labels:
+    managed-by: tharun-makala
+subjects:
+  - kind: ServiceAccount
+    name: cicd-sa
+    namespace: apps-staging
+roleRef:
+  kind: ClusterRole
+  name: cicd-deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+# CI/CD SA — prod (separate SA)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cicd-deployer-prod
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+subjects:
+  - kind: ServiceAccount
+    name: cicd-sa-prod
+    namespace: apps-prod
+roleRef:
+  kind: ClusterRole
+  name: cicd-deployer
+  apiGroup: rbac.authorization.k8s.io
