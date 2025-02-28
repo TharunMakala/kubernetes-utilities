@@ -1,0 +1,42 @@
+---
+# Default deny all ingress + egress in apps-dev
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: apps-dev
+  labels:
+    managed-by: tharun-makala
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Default deny all ingress + egress in apps-staging
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: apps-staging
+  labels:
+    managed-by: tharun-makala
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Default deny all ingress + egress in apps-prod
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
