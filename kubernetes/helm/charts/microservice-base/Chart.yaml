@@ -1,0 +1,16 @@
+apiVersion: v2
+name: microservice-base
+description: >
+  Opinionated base Helm chart for deploying REST and gRPC microservices on Azure AKS.
+  Provides Deployment, Service, HPA, Ingress, ServiceAccount, and ConfigMap templates
+  with sensible Azure-aware defaults.
+type: application
+version: 1.0.0
+appVersion: "latest"
+keywords:
+  - microservice
+  - aks
+  - azure
+maintainers:
+  - name: Tharun Makala
+    email: tharun.makala@outlook.com
