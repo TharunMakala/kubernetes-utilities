@@ -1,0 +1,20 @@
+apiVersion: v2
+name: api-gateway
+description: >
+  NGINX-based API gateway with TLS termination, rate limiting, and
+  JWT validation for internal AKS services.
+type: application
+version: 1.0.0
+appVersion: "1.25"
+dependencies:
+  - name: microservice-base
+    version: "1.0.0"
+    repository: "file://../microservice-base"
+    alias: gateway
+keywords:
+  - api-gateway
+  - nginx
+  - aks
+maintainers:
+  - name: Tharun Makala
+    email: tharun.makala@outlook.com

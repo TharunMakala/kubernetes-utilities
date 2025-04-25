@@ -1,0 +1,82 @@
+gateway:
+  replicaCount: 2
+
+  image:
+    repository: myacr.azurecr.io/api-gateway
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    hosts:
+      - host: api.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-gateway-tls
+        hosts:
+          - api.example.com
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 60
+
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9113"
+    prometheus.io/path: "/metrics"
+
+nginx:
+  configMap:
+    enabled: true
+    data:
+      nginx.conf: |
+        worker_processes auto;
+        events { worker_connections 1024; }
+        http {
+          include       /etc/nginx/mime.types;
+          default_type  application/octet-stream;
+          sendfile        on;
+          keepalive_timeout 65;
+          gzip on;
+          server {
+            listen 8080;
+            location /health { return 200 "ok"; }
+            location / {
+              proxy_pass http://backend;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+            }
+          }
+        }
+
+rateLimit:
+  enabled: true
+  requestsPerSecond: 100
+  burst: 200
+
+jwtValidation:
+  enabled: false
+  jwksUri: ""
+  issuer: ""
