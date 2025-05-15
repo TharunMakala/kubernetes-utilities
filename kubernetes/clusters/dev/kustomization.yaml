@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: apps-dev
+
+commonLabels:
+  environment: dev
+
+resources:
+  - ../../manifests/namespaces/namespaces.yaml
+  - ../../manifests/rbac/cluster-roles.yaml
+  - ../../manifests/rbac/role-bindings.yaml
+  - ../../manifests/network-policies/default-deny-all.yaml
+  - ../../manifests/network-policies/allow-same-namespace.yaml
+
+patches:
+  - path: resource-quota-patch.yaml
