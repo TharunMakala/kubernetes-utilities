@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: prod
+  namespace: argocd
+  labels:
+    managed-by: tharun-makala
+spec:
+  description: Production environment project — manual sync only
+  sourceRepos:
+    - "https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities"
+  destinations:
+    - namespace: apps-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: Secret         # Secrets managed externally via Azure Key Vault CSI
+  syncWindows:
+    - kind: allow
+      schedule: "0 8 * * 2,4"   # Tuesdays and Thursdays 08:00–10:00 UTC (planned deploy windows)
+      duration: 2h
+      applications:
+        - "*"
+    - kind: deny
+      schedule: "0 0 * * 5"     # No Friday deploys
+      duration: 72h
+      applications:
+        - "*"
+  roles:
+    - name: prod-deployer
+      description: Platform engineers only
+      policies:
+        - p, proj:prod:prod-deployer, applications, sync, prod/*, allow
+        - p, proj:prod:prod-deployer, applications, get, prod/*, allow
+      groups:
+        - aks-platform-engineers

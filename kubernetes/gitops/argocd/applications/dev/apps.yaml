@@ -1,0 +1,51 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: api-gateway-dev
+  namespace: argocd
+  labels:
+    environment: dev
+    managed-by: tharun-makala
+spec:
+  project: dev
+  source:
+    repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
+    targetRevision: HEAD
+    path: kubernetes/helm/charts/api-gateway
+    helm:
+      releaseName: api-gateway
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - PrunePropagationPolicy=foreground
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-base-dev
+  namespace: argocd
+  labels:
+    environment: dev
+    managed-by: tharun-makala
+spec:
+  project: dev
+  source:
+    repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
+    targetRevision: HEAD
+    path: kubernetes/clusters/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

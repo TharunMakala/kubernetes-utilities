@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: dev
+  namespace: argocd
+  labels:
+    managed-by: tharun-makala
+spec:
+  description: Development environment project
+  sourceRepos:
+    - "https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities"
+    - "https://charts.helm.sh/stable"
+    - "https://argoproj.github.io/argo-helm"
+  destinations:
+    - namespace: apps-dev
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  roles:
+    - name: dev-deployer
+      description: Allows developers to sync dev applications
+      policies:
+        - p, proj:dev:dev-deployer, applications, sync, dev/*, allow
+        - p, proj:dev:dev-deployer, applications, get, dev/*, allow
+      groups:
+        - aks-developers

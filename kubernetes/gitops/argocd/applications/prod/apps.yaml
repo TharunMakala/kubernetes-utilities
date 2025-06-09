@@ -1,0 +1,55 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: api-gateway-prod
+  namespace: argocd
+  labels:
+    environment: prod
+    managed-by: tharun-makala
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.teams: devops-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: devops-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.teams: devops-alerts
+spec:
+  project: prod
+  source:
+    repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
+    targetRevision: HEAD
+    path: kubernetes/helm/charts/api-gateway
+    helm:
+      releaseName: api-gateway
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+      - PrunePropagationPolicy=foreground
+      - RespectIgnoreDifferences=true
+    # No automated sync for prod — requires manual trigger
+  revisionHistoryLimit: 10
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-base-prod
+  namespace: argocd
+  labels:
+    environment: prod
+    managed-by: tharun-makala
+spec:
+  project: prod
+  source:
+    repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
+    targetRevision: HEAD
+    path: kubernetes/clusters/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false

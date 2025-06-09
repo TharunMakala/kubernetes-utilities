@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: staging
+  namespace: argocd
+  labels:
+    managed-by: tharun-makala
+spec:
+  description: Staging / pre-production environment project
+  sourceRepos:
+    - "https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities"
+    - "https://charts.helm.sh/stable"
+  destinations:
+    - namespace: apps-staging
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  syncWindows:
+    - kind: allow
+      schedule: "0 6 * * 1-5"   # weekdays 06:00–22:00 UTC
+      duration: 16h
+      applications:
+        - "*"
+  roles:
+    - name: staging-deployer
+      description: CI/CD pipeline role for staging
+      policies:
+        - p, proj:staging:staging-deployer, applications, sync, staging/*, allow
+        - p, proj:staging:staging-deployer, applications, get, staging/*, allow
