@@ -1,0 +1,42 @@
+---
+# API Gateway — ensure at least 1 pod available during node drain
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway-pdb
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+---
+# Generic microservices — tolerate rolling restarts (max 1 unavailable)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: microservice-base-pdb
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/managed-by: Helm
+---
+# Staging — looser, allow up to 50% unavailable for faster deploys
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: apps-staging-pdb
+  namespace: apps-staging
+  labels:
+    managed-by: tharun-makala
+spec:
+  maxUnavailable: "50%"
+  selector:
+    matchLabels:
+      app.kubernetes.io/managed-by: Helm

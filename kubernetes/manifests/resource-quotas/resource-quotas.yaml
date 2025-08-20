@@ -1,0 +1,61 @@
+---
+# Dev — generous for local experimentation
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: apps-dev-quota
+  namespace: apps-dev
+  labels:
+    managed-by: tharun-makala
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    pods: "20"
+    services: "10"
+    persistentvolumeclaims: "5"
+    count/secrets: "30"
+    count/configmaps: "20"
+---
+# Staging — mirrors prod topology at half capacity
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: apps-staging-quota
+  namespace: apps-staging
+  labels:
+    managed-by: tharun-makala
+spec:
+  hard:
+    requests.cpu: "8"
+    requests.memory: 16Gi
+    limits.cpu: "16"
+    limits.memory: 32Gi
+    pods: "40"
+    services: "20"
+    persistentvolumeclaims: "10"
+    count/secrets: "60"
+    count/configmaps: "40"
+---
+# Prod — strict hard limits; alerts fire at 80% usage
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: apps-prod-quota
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  hard:
+    requests.cpu: "32"
+    requests.memory: 64Gi
+    limits.cpu: "64"
+    limits.memory: 128Gi
+    pods: "200"
+    services: "50"
+    persistentvolumeclaims: "30"
+    count/ingresses.networking.k8s.io: "20"
+    count/secrets: "200"
+    count/configmaps: "100"
