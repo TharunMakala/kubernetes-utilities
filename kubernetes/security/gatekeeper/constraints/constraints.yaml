@@ -1,0 +1,65 @@
+---
+# Enforce resource limits on all app namespaces
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: RequireResourceLimits
+metadata:
+  name: require-resource-limits
+  labels:
+    managed-by: tharun-makala
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - apps-dev
+            - apps-staging
+            - apps-prod
+---
+# Disallow :latest tag in staging and prod
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: DisallowLatestTag
+metadata:
+  name: disallow-latest-tag-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - apps-staging
+            - apps-prod
+---
+# Require non-root in all app namespaces
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: RequireNonRoot
+metadata:
+  name: require-non-root
+  labels:
+    managed-by: tharun-makala
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - apps-dev
+            - apps-staging
+            - apps-prod

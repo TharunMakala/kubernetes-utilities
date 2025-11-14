@@ -1,0 +1,33 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: disallowlatesttag
+  labels:
+    managed-by: tharun-makala
+spec:
+  crd:
+    spec:
+      names:
+        kind: DisallowLatestTag
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package disallowlatesttag
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          endswith(container.image, ":latest")
+          msg := sprintf("Container <%v> uses :latest tag — pin to a specific digest", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not contains(container.image, ":")
+          msg := sprintf("Container <%v> has no image tag — pin to a specific digest", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.initContainers[_]
+          endswith(container.image, ":latest")
+          msg := sprintf("Init container <%v> uses :latest tag", [container.name])
+        }
