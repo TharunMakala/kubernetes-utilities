@@ -1,0 +1,59 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - "kubernetes/**"
+
+pr: none
+
+variables:
+  - group: aks-shared
+  - group: aks-dev
+  - name: ARGOCD_APP
+    value: api-gateway-dev
+
+pool:
+  name: azure-pipelines-agent
+
+stages:
+  - stage: DeployDev
+    displayName: Deploy to Dev
+    jobs:
+      - deployment: DeployDev
+        displayName: ArgoCD sync — apps-dev
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: Get AKS credentials
+                  inputs:
+                    azureSubscription: sc-aks-dev
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az aks get-credentials \
+                        --resource-group $(AKS_RG_DEV) \
+                        --name $(AKS_CLUSTER_DEV) \
+                        --overwrite-existing
+
+                - script: |
+                    argocd app sync $(ARGOCD_APP) \
+                      --server $(ARGOCD_SERVER) \
+                      --auth-token $(ARGOCD_TOKEN) \
+                      --timeout 300 \
+                      --prune
+                  displayName: ArgoCD sync dev
+
+                - script: |
+                    argocd app wait $(ARGOCD_APP) \
+                      --server $(ARGOCD_SERVER) \
+                      --auth-token $(ARGOCD_TOKEN) \
+                      --health \
+                      --timeout 300
+                  displayName: Wait for healthy status

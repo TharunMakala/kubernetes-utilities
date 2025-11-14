@@ -1,0 +1,81 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - "*.md"
+      - "kubernetes/manifests/**"
+      - "kubernetes/gitops/**"
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  - group: aks-shared
+  - name: IMAGE_REPO
+    value: $(ACR_NAME).azurecr.io/$(Build.Repository.Name)
+  - name: IMAGE_TAG
+    value: $(Build.BuildId)-$(Build.SourceVersion)
+
+pool:
+  name: azure-pipelines-agent
+
+stages:
+  - stage: Build
+    displayName: Build & Scan
+    jobs:
+      - job: BuildAndPush
+        displayName: Docker build, push, and vulnerability scan
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - task: AzureCLI@2
+            displayName: ACR Login
+            inputs:
+              azureSubscription: sc-aks-prod
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az acr login --name $(ACR_NAME)
+
+          - task: Docker@2
+            displayName: Build image
+            inputs:
+              command: build
+              dockerfile: Dockerfile
+              repository: $(IMAGE_REPO)
+              tags: |
+                $(IMAGE_TAG)
+                latest
+              arguments: >
+                --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                --build-arg GIT_SHA=$(Build.SourceVersion)
+                --label org.opencontainers.image.revision=$(Build.SourceVersion)
+
+          - script: |
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy image \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                --no-progress \
+                $(IMAGE_REPO):$(IMAGE_TAG)
+            displayName: Trivy vulnerability scan
+
+          - task: Docker@2
+            displayName: Push image to ACR
+            inputs:
+              command: push
+              repository: $(IMAGE_REPO)
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
+          - bash: |
+              echo "##vso[task.setvariable variable=IMAGE_DIGEST;isOutput=true]$(docker inspect --format='{{index .RepoDigests 0}}' $(IMAGE_REPO):$(IMAGE_TAG))"
+            name: SetDigest
+            displayName: Capture image digest

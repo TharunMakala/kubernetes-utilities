@@ -1,0 +1,62 @@
+trigger: none  # Triggered manually or by deploy-dev completion
+
+variables:
+  - group: aks-shared
+  - group: aks-staging
+  - name: ARGOCD_APP
+    value: api-gateway-staging
+
+pool:
+  name: azure-pipelines-agent
+
+stages:
+  - stage: DeployStaging
+    displayName: Deploy to Staging
+    jobs:
+      - deployment: DeployStaging
+        displayName: ArgoCD sync — apps-staging
+        environment: staging   # Manual approval gate configured in Azure DevOps
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: Get AKS credentials
+                  inputs:
+                    azureSubscription: sc-aks-staging
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az aks get-credentials \
+                        --resource-group $(AKS_RG_STAGING) \
+                        --name $(AKS_CLUSTER_STAGING) \
+                        --overwrite-existing
+
+                - script: |
+                    helm upgrade --install api-gateway kubernetes/helm/charts/api-gateway \
+                      --namespace apps-staging \
+                      -f kubernetes/helm/charts/microservice-base/values-staging.yaml \
+                      --set gateway.image.tag=$(IMAGE_TAG) \
+                      --atomic \
+                      --timeout 5m \
+                      --wait
+                  displayName: Helm upgrade staging
+
+                - script: |
+                    kubectl rollout status deployment/api-gateway \
+                      --namespace apps-staging \
+                      --timeout=300s
+                  displayName: Verify rollout
+
+                - script: |
+                    # Basic smoke test
+                    STAGING_URL="https://my-service.staging.example.com/health/ready"
+                    STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$STAGING_URL")
+                    if [ "$STATUS" != "200" ]; then
+                      echo "Smoke test failed: HTTP $STATUS"
+                      exit 1
+                    fi
+                    echo "Smoke test passed: HTTP $STATUS"
+                  displayName: Smoke test

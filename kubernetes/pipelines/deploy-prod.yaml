@@ -1,0 +1,98 @@
+trigger: none  # Manual trigger only — requires approval from platform-engineers group
+
+variables:
+  - group: aks-shared
+  - group: aks-prod
+  - name: ARGOCD_APP
+    value: api-gateway-prod
+
+pool:
+  name: azure-pipelines-agent
+
+stages:
+  - stage: PreflightCheck
+    displayName: Preflight checks
+    jobs:
+      - job: Preflight
+        steps:
+          - script: |
+              # Ensure staging is healthy before allowing prod deploy
+              STAGING_STATUS=$(argocd app get api-gateway-staging \
+                --server $(ARGOCD_SERVER) \
+                --auth-token $(ARGOCD_TOKEN) \
+                -o json | jq -r '.status.health.status')
+              if [ "$STAGING_STATUS" != "Healthy" ]; then
+                echo "Staging is not healthy ($STAGING_STATUS). Blocking prod deploy."
+                exit 1
+              fi
+              echo "Staging is $STAGING_STATUS — proceeding"
+            displayName: Verify staging health
+
+  - stage: DeployProd
+    displayName: Deploy to Production
+    dependsOn: PreflightCheck
+    jobs:
+      - deployment: DeployProd
+        displayName: ArgoCD sync — apps-prod
+        environment: prod   # Requires approval from aks-platform-engineers group
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: Get AKS credentials
+                  inputs:
+                    azureSubscription: sc-aks-prod
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az aks get-credentials \
+                        --resource-group $(AKS_RG_PROD) \
+                        --name $(AKS_CLUSTER_PROD) \
+                        --overwrite-existing
+
+                - script: |
+                    argocd app sync $(ARGOCD_APP) \
+                      --server $(ARGOCD_SERVER) \
+                      --auth-token $(ARGOCD_TOKEN) \
+                      --timeout 600 \
+                      --prune
+                  displayName: ArgoCD sync prod
+
+                - script: |
+                    argocd app wait $(ARGOCD_APP) \
+                      --server $(ARGOCD_SERVER) \
+                      --auth-token $(ARGOCD_TOKEN) \
+                      --health \
+                      --timeout 600
+                  displayName: Wait for healthy status
+
+                - script: |
+                    # Production smoke tests
+                    PROD_URL="https://api.example.com/health/ready"
+                    for i in 1 2 3; do
+                      STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$PROD_URL")
+                      if [ "$STATUS" = "200" ]; then
+                        echo "Smoke test $i passed: HTTP $STATUS"
+                      else
+                        echo "Smoke test $i failed: HTTP $STATUS"
+                        exit 1
+                      fi
+                      sleep 5
+                    done
+                  displayName: Production smoke tests
+
+  - stage: PostDeployNotify
+    displayName: Notify
+    dependsOn: DeployProd
+    condition: always()
+    jobs:
+      - job: Notify
+        steps:
+          - script: |
+              curl -s -X POST "$(TEAMS_WEBHOOK_URL)" \
+                -H "Content-Type: application/json" \
+                -d "{\"text\": \"Prod deploy completed: $(Build.BuildId) — $(Build.SourceVersionMessage)\"}"
+            displayName: Notify Teams channel
