@@ -1,0 +1,52 @@
+---
+# Azure Workload Identity — federated credential config
+# One block per application service account that needs Azure resource access.
+# Apply AFTER the namespace and ServiceAccount are created.
+#
+# Prerequisites:
+#   az identity create -n <name> -g <rg>
+#   az identity federated-credential create ...
+#   Annotate the Kubernetes ServiceAccount (done via Helm values serviceAccount.annotations)
+
+# cert-manager — needs Azure DNS write access for DNS-01 challenges
+# Managed identity: mi-cert-manager
+# Federated credential: fc-cert-manager-<env>
+---
+# API Gateway service account — needs Key Vault secret read
+# Managed identity: mi-api-gateway-prod
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-gateway
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+    azure.workload.identity/use: "true"
+  annotations:
+    azure.workload.identity/client-id: "<API_GATEWAY_CLIENT_ID>"
+    azure.workload.identity/tenant-id: "<TENANT_ID>"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-gateway
+  namespace: apps-staging
+  labels:
+    managed-by: tharun-makala
+    azure.workload.identity/use: "true"
+  annotations:
+    azure.workload.identity/client-id: "<API_GATEWAY_STAGING_CLIENT_ID>"
+    azure.workload.identity/tenant-id: "<TENANT_ID>"
+---
+# Monitoring stack — needs Azure Monitor / Log Analytics read
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    managed-by: tharun-makala
+    azure.workload.identity/use: "true"
+  annotations:
+    azure.workload.identity/client-id: "<PROMETHEUS_CLIENT_ID>"
+    azure.workload.identity/tenant-id: "<TENANT_ID>"
