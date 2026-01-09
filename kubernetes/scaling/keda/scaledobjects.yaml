@@ -1,0 +1,72 @@
+---
+# API Gateway — scale on Azure Service Bus queue depth
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: api-gateway-sb-scaler
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  scaleTargetRef:
+    name: api-gateway
+  minReplicaCount: 3
+  maxReplicaCount: 20
+  cooldownPeriod: 300
+  pollingInterval: 30
+  triggers:
+    - type: azure-servicebus
+      metadata:
+        queueName: api-requests
+        namespace: sb-myapp-prod
+        messageCount: "50"     # Scale up when >50 messages in queue
+      authenticationRef:
+        name: keda-sb-trigger-auth
+---
+# Background worker — scale on Event Hub consumer lag
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: event-processor-scaler
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  scaleTargetRef:
+    name: event-processor
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  cooldownPeriod: 600
+  pollingInterval: 15
+  triggers:
+    - type: azure-eventhub
+      metadata:
+        eventHubName: events
+        eventHubNamespace: evhns-myapp-prod
+        consumerGroup: event-processor-cg
+        unprocessedEventThreshold: "100"
+      authenticationRef:
+        name: keda-eventhub-trigger-auth
+---
+# TriggerAuthentication using Workload Identity (no secrets in cluster)
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-sb-trigger-auth
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  podIdentity:
+    provider: azure-workload
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-eventhub-trigger-auth
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  podIdentity:
+    provider: azure-workload
