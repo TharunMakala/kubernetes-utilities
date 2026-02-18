@@ -1,0 +1,82 @@
+---
+# VPA for API Gateway — recommendation mode (does not auto-update pods)
+# Use this to right-size resource requests without disruption
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: api-gateway-vpa
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  updatePolicy:
+    updateMode: "Off"   # Recommendation only — apply manually after review
+  resourcePolicy:
+    containerPolicies:
+      - containerName: api-gateway
+        minAllowed:
+          cpu: 100m
+          memory: 128Mi
+        maxAllowed:
+          cpu: 2000m
+          memory: 2Gi
+        controlledResources:
+          - cpu
+          - memory
+---
+# VPA for background event-processor — auto mode acceptable (stateless)
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: event-processor-vpa
+  namespace: apps-prod
+  labels:
+    managed-by: tharun-makala
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: event-processor
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: event-processor
+        minAllowed:
+          cpu: 50m
+          memory: 64Mi
+        maxAllowed:
+          cpu: 1000m
+          memory: 1Gi
+        controlledResources:
+          - cpu
+          - memory
+---
+# VPA for staging api-gateway — auto mode for faster feedback
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: api-gateway-vpa
+  namespace: apps-staging
+  labels:
+    managed-by: tharun-makala
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: api-gateway
+        minAllowed:
+          cpu: 50m
+          memory: 64Mi
+        maxAllowed:
+          cpu: 1000m
+          memory: 1Gi
