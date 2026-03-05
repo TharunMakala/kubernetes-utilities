@@ -9,7 +9,7 @@ spec:
     requests.memory: 64Gi
     limits.cpu: "64"
     limits.memory: 128Gi
-    pods: "200"
+    pods: "300"
     services: "50"
     persistentvolumeclaims: "30"
     count/ingresses.networking.k8s.io: "20"

@@ -5,7 +5,7 @@ replicaCount: 2
 
 image:
   repository: myacr.azurecr.io/my-service
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: ""  # Overridden by CI/CD with the image digest
 
 imagePullSecrets:
@@ -53,8 +53,8 @@ resources:
     cpu: 500m
     memory: 512Mi
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 150m
+    memory: 192Mi
 
 autoscaling:
   enabled: true

@@ -5,8 +5,8 @@ description: >
   Provides Deployment, Service, HPA, Ingress, ServiceAccount, and ConfigMap templates
   with sensible Azure-aware defaults.
 type: application
-version: 1.0.0
-appVersion: "latest"
+version: 1.2.0
+appVersion: "1.31"
 keywords:
   - microservice
   - aks
