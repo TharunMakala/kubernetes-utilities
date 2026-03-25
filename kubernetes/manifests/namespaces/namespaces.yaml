@@ -7,7 +7,7 @@ metadata:
     environment: dev
     managed-by: tharun-makala
   annotations:
-    contact: tharun.makala@outlook.com
+    contact: mtarun523@gmail.com
     description: "Development workloads"
 ---
 apiVersion: v1
@@ -18,7 +18,7 @@ metadata:
     environment: staging
     managed-by: tharun-makala
   annotations:
-    contact: tharun.makala@outlook.com
+    contact: mtarun523@gmail.com
     description: "Staging / pre-production workloads"
 ---
 apiVersion: v1
@@ -29,7 +29,7 @@ metadata:
     environment: prod
     managed-by: tharun-makala
   annotations:
-    contact: tharun.makala@outlook.com
+    contact: mtarun523@gmail.com
     description: "Production workloads"
 ---
 apiVersion: v1

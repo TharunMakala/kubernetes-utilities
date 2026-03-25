@@ -73,4 +73,4 @@ All production changes flow through ArgoCD. Direct `kubectl apply` in prod is **
 
 ## Contact
 
-Tharun Makala — tharun.makala@outlook.com
+Tharun Makala — mtarun523@gmail.com
