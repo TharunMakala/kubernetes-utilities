@@ -1,87 +1,75 @@
-# Azure Infrastructure — Terraform
+# kubernetes-utilities
 
-Production-grade Terraform codebase for provisioning and managing Azure infrastructure. Built around a modular, environment-driven architecture with Azure DevOps CI/CD integration.
+Production-grade Kubernetes configuration for Azure Kubernetes Service (AKS).
+Covers multi-environment deployments, GitOps with ArgoCD, Helm charts, security
+hardening with OPA Gatekeeper, and Azure DevOps CI/CD pipelines.
 
 ## Repository Structure
 
 ```
 .
-├── modules/              # Reusable Terraform modules
-│   ├── networking/       # VNet, subnets, NSGs, peering
-│   ├── compute/          # VMs, scale sets, availability sets
-│   ├── aks/              # Azure Kubernetes Service cluster
-│   ├── storage/          # Storage accounts, blob containers
-│   └── monitoring/       # Log Analytics, alerts, dashboards
-├── environments/         # Per-environment root modules
-│   ├── dev/
-│   ├── staging/
-│   └── prod/
-├── pipelines/            # Azure DevOps pipeline definitions
-└── scripts/              # Helper shell scripts
+└── kubernetes/
+    ├── clusters/          # Per-environment Kustomize overlays (dev / staging / prod)
+    ├── manifests/         # Cluster-wide manifests: RBAC, namespaces, network policies,
+    │                      #   resource quotas, PDBs, HPA, VPA, ingress
+    ├── helm/              # In-house Helm charts
+    │   └── charts/
+    │       ├── microservice-base/   # Base chart for all REST/gRPC microservices
+    │       └── api-gateway/         # NGINX-based API gateway
+    ├── gitops/            # ArgoCD projects and Application CRDs
+    │   └── argocd/
+    │       ├── install/             # ArgoCD Helm values
+    │       ├── projects/            # AppProject per environment
+    │       └── applications/        # App-of-apps per environment
+    ├── security/          # OPA Gatekeeper constraints + Azure Workload Identity configs
+    │   ├── gatekeeper/
+    │   └── workload-identity/
+    ├── scaling/           # KEDA ScaledObjects for event-driven autoscaling
+    └── pipelines/         # Azure DevOps YAML pipeline definitions
 ```
 
 ## Prerequisites
 
-| Tool | Version |
-|------|---------|
-| Terraform | >= 1.5.0 |
-| Azure CLI | >= 2.50.0 |
-| Azure DevOps Agent | >= 3.x |
+| Tool | Minimum version |
+|------|----------------|
+| `kubectl` | 1.28 |
+| `helm` | 3.14 |
+| `kustomize` | 5.3 |
+| `argocd` CLI | 2.10 |
+| Azure CLI | 2.57 |
 
-## Getting Started
-
-### 1. Authenticate to Azure
+## Quick Start
 
 ```bash
+# Authenticate to AKS
 az login
-az account set --subscription "<SUBSCRIPTION_ID>"
+az aks get-credentials --resource-group rg-aks-prod --name aks-prod --overwrite-existing
+
+# Apply cluster base (namespaces, RBAC, network policies, quotas)
+kubectl apply -k kubernetes/clusters/prod/
+
+# Lint Helm charts
+helm lint kubernetes/helm/charts/microservice-base
+helm lint kubernetes/helm/charts/api-gateway
 ```
 
-### 2. Bootstrap the backend
+## Environments
 
-Each environment uses a dedicated Azure Storage Account for remote state. Initialise it before running Terraform:
+| Environment | AKS Tier | Node SKU | Min Nodes | Max Nodes |
+|-------------|----------|----------|-----------|-----------|
+| dev | Free | Standard_D2s_v3 | 1 | 3 |
+| staging | Standard | Standard_D4s_v3 | 2 | 5 |
+| prod | Standard | Standard_D8s_v3 | 3 | 20 |
 
-```bash
-./scripts/init-backend.sh <env>   # env = dev | staging | prod
-```
+## GitOps Flow
 
-### 3. Initialise Terraform
+All production changes flow through ArgoCD. Direct `kubectl apply` in prod is blocked by OPA Gatekeeper.
 
-```bash
-cd environments/dev
-terraform init
-```
+1. Open a PR against `main`
+2. Azure DevOps runs `helm lint` + `kubeval` + OPA policy checks
+3. On merge, ArgoCD auto-syncs dev; staging and prod require approval gates
+4. Sync status is posted back to the Azure DevOps PR
 
-### 4. Plan & Apply
+## Contact
 
-```bash
-terraform plan -out=tfplan
-terraform apply tfplan
-```
-
-## Module Documentation
-
-- [Networking](modules/networking/README.md)
-- [Compute](modules/compute/README.md)
-- [AKS](modules/aks/README.md)
-- [Storage](modules/storage/README.md)
-- [Monitoring](modules/monitoring/README.md)
-
-## CI/CD
-
-Pipelines are defined in `pipelines/`. Two pipeline files are provided:
-
-| File | Purpose |
-|------|---------|
-| `terraform-plan.yml` | Runs `terraform plan` on every PR |
-| `terraform-apply.yml` | Applies on merge to `main` (prod gated) |
-
-## Contributing
-
-1. Branch from `main` using `feat/`, `fix/`, or `chore/` prefixes.
-2. Open a PR — the plan pipeline runs automatically.
-3. At least one reviewer approval required before merge.
-
-## License
-
-Internal use only. All rights reserved.
+Tharun Makala — mtarun523@gmail.com
