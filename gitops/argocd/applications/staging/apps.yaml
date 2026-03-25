@@ -2,54 +2,49 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: api-gateway-prod
+  name: api-gateway-staging
   namespace: argocd
   labels:
-    environment: prod
+    environment: staging
     managed-by: tharun-makala
-  annotations:
-    notifications.argoproj.io/subscribe.on-sync-succeeded.teams: devops-alerts
-    notifications.argoproj.io/subscribe.on-sync-failed.teams: devops-alerts
-    notifications.argoproj.io/subscribe.on-health-degraded.teams: devops-alerts
 spec:
-  project: prod
+  project: staging
   source:
     repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
     targetRevision: HEAD
-    path: kubernetes/helm/charts/api-gateway
+    path: helm/charts/api-gateway
     helm:
       releaseName: api-gateway
       valueFiles:
         - values.yaml
-        - values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps-prod
+    namespace: apps-staging
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
     syncOptions:
       - CreateNamespace=false
-      - PrunePropagationPolicy=foreground
-      - RespectIgnoreDifferences=true
-    # No automated sync for prod — requires manual trigger
-  revisionHistoryLimit: 10
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cluster-base-prod
+  name: cluster-base-staging
   namespace: argocd
   labels:
-    environment: prod
+    environment: staging
     managed-by: tharun-makala
 spec:
-  project: prod
+  project: staging
   source:
     repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
     targetRevision: HEAD
-    path: kubernetes/clusters/prod
+    path: clusters/staging
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps-prod
+    namespace: apps-staging
   syncPolicy:
-    syncOptions:
-      - CreateNamespace=false
+    automated:
+      prune: false
+      selfHeal: false

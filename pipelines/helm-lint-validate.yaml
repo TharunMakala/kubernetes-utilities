@@ -6,9 +6,9 @@ pr:
       - main
   paths:
     include:
-      - "kubernetes/helm/**"
-      - "kubernetes/manifests/**"
-      - "kubernetes/clusters/**"
+      - "helm/**"
+      - "manifests/**"
+      - "clusters/**"
 
 pool:
   name: azure-pipelines-agent
@@ -29,28 +29,28 @@ jobs:
         displayName: Tool versions
 
       - script: |
-          for chart in kubernetes/helm/charts/*/; do
+          for chart in helm/charts/*/; do
             echo "Linting $chart..."
             helm lint "$chart" --strict
           done
         displayName: Helm lint all charts
 
       - script: |
-          for chart in kubernetes/helm/charts/*/; do
+          for chart in helm/charts/*/; do
             echo "Rendering $chart for kubeval..."
             helm template test-release "$chart" | kubeval --strict --ignore-missing-schemas
           done
         displayName: kubeval — validate rendered manifests
 
       - script: |
-          kubectl kustomize kubernetes/clusters/dev   | kubeval --strict --ignore-missing-schemas
-          kubectl kustomize kubernetes/clusters/staging | kubeval --strict --ignore-missing-schemas
-          kubectl kustomize kubernetes/clusters/prod  | kubeval --strict --ignore-missing-schemas
+          kubectl kustomize clusters/dev   | kubeval --strict --ignore-missing-schemas
+          kubectl kustomize clusters/staging | kubeval --strict --ignore-missing-schemas
+          kubectl kustomize clusters/prod  | kubeval --strict --ignore-missing-schemas
         displayName: kubeval — validate Kustomize overlays
 
       - script: |
-          for chart in kubernetes/helm/charts/*/; do
-            helm template test-release "$chart" | conftest test --policy kubernetes/security/gatekeeper/constraints/ -
+          for chart in helm/charts/*/; do
+            helm template test-release "$chart" | conftest test --policy security/gatekeeper/constraints/ -
           done
         displayName: OPA conftest — policy dry-run on Helm output
         continueOnError: false

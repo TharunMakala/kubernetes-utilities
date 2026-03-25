@@ -5,8 +5,8 @@ trigger:
   paths:
     exclude:
       - "*.md"
-      - "kubernetes/manifests/**"
-      - "kubernetes/gitops/**"
+      - "manifests/**"
+      - "gitops/**"
 
 pr:
   branches:

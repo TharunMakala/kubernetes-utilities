@@ -35,9 +35,9 @@ stages:
                         --overwrite-existing
 
                 - script: |
-                    helm upgrade --install api-gateway kubernetes/helm/charts/api-gateway \
+                    helm upgrade --install api-gateway helm/charts/api-gateway \
                       --namespace apps-staging \
-                      -f kubernetes/helm/charts/microservice-base/values-staging.yaml \
+                      -f helm/charts/microservice-base/values-staging.yaml \
                       --set gateway.image.tag=$(IMAGE_TAG) \
                       --atomic \
                       --timeout 5m \

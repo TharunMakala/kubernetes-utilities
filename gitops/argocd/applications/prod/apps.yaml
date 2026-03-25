@@ -2,50 +2,54 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: api-gateway-dev
+  name: api-gateway-prod
   namespace: argocd
   labels:
-    environment: dev
+    environment: prod
     managed-by: tharun-makala
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.teams: devops-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: devops-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.teams: devops-alerts
 spec:
-  project: dev
+  project: prod
   source:
     repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
     targetRevision: HEAD
-    path: kubernetes/helm/charts/api-gateway
+    path: helm/charts/api-gateway
     helm:
       releaseName: api-gateway
       valueFiles:
         - values.yaml
+        - values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps-dev
+    namespace: apps-prod
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=false
       - PrunePropagationPolicy=foreground
+      - RespectIgnoreDifferences=true
+    # No automated sync for prod — requires manual trigger
+  revisionHistoryLimit: 10
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cluster-base-dev
+  name: cluster-base-prod
   namespace: argocd
   labels:
-    environment: dev
+    environment: prod
     managed-by: tharun-makala
 spec:
-  project: dev
+  project: prod
   source:
     repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
     targetRevision: HEAD
-    path: kubernetes/clusters/dev
+    path: clusters/prod
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps-dev
+    namespace: apps-prod
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

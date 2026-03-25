@@ -2,49 +2,50 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: api-gateway-staging
+  name: api-gateway-dev
   namespace: argocd
   labels:
-    environment: staging
+    environment: dev
     managed-by: tharun-makala
 spec:
-  project: staging
+  project: dev
   source:
     repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
     targetRevision: HEAD
-    path: kubernetes/helm/charts/api-gateway
+    path: helm/charts/api-gateway
     helm:
       releaseName: api-gateway
       valueFiles:
         - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps-staging
+    namespace: apps-dev
   syncPolicy:
     automated:
       prune: true
-      selfHeal: false
+      selfHeal: true
     syncOptions:
       - CreateNamespace=false
+      - PrunePropagationPolicy=foreground
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cluster-base-staging
+  name: cluster-base-dev
   namespace: argocd
   labels:
-    environment: staging
+    environment: dev
     managed-by: tharun-makala
 spec:
-  project: staging
+  project: dev
   source:
     repoURL: https://dev.azure.com/myorg/kubernetes-utilities/_git/kubernetes-utilities
     targetRevision: HEAD
-    path: kubernetes/clusters/staging
+    path: clusters/dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps-staging
+    namespace: apps-dev
   syncPolicy:
     automated:
-      prune: false
-      selfHeal: false
+      prune: true
+      selfHeal: true
